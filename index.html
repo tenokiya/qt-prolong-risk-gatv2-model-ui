@@ -162,11 +162,7 @@
           <label>IG（|attribution| 上位）</label>
           <div class="small">バーは attribution の符号に応じて 0 を中心に左右へ表示します（右=正、左=負）。</div>
           <div id="igChart" class="igChart" aria-label="IG bar chart"></div>
-          <table id="igTopTbl">
-            <thead><tr><th>feature</th><th>attribution</th></tr></thead>
-            <tbody></tbody>
-          </table>
-          <div class="small">注：attribution は「モデル入力空間（node特徴 + スケール済みglobal特徴）」上の値です。</div>
+<div class="small">注：attribution は「モデル入力空間（node特徴 + スケール済みglobal特徴）」上の値です。</div>
         </div>
       </div>
     </div>
@@ -212,24 +208,15 @@
 
   function renderIGTop(ig){
     const box = $("igBox");
-    const tb = $("igTopTbl").querySelector("tbody");
-    tb.innerHTML = "";
 
     if(!ig || !ig.top_abs){
       box.style.display = "none";
+      // chartもクリア
+      const chart = $("igChart");
+      if(chart) chart.innerHTML = "";
       return;
     }
 
-    for(const row of ig.top_abs){
-      const tr = document.createElement("tr");
-      const td1 = document.createElement("td");
-      const td2 = document.createElement("td");
-      td1.textContent = row[0];
-      td2.textContent = String(row[1]);
-      tr.appendChild(td1);
-      tr.appendChild(td2);
-      tb.appendChild(tr);
-    }
     renderIGChart(ig);
     box.style.display = "block";
   }
