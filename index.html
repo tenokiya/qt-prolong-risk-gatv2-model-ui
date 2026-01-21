@@ -56,6 +56,21 @@
     .apiNote { margin-top: 8px; display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
     .apiNote code { background:#fff; border:1px solid var(--b); border-radius: 8px; padding: 2px 6px; font-size: 12px; }
     .apiNote button { padding: 6px 10px; font-size: 12px; }
+  
+    /* IG chart (bar) */
+    .igChart { margin-top: 10px; border: 1px solid var(--b); border-radius: 10px; background:#fff; padding: 10px; }
+    .igRow { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: center; margin: 6px 0; }
+    .igFeat { font-size: 12px; color: var(--t); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .igBarWrap { position: relative; height: 10px; background:#f3f4f6; border:1px solid var(--b); border-radius: 999px; overflow: hidden; }
+    .igZero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--b); }
+    .igBar { position: absolute; top: 0; bottom: 0; border-radius: 999px; background:#111827; opacity: 0.85; }
+    .igBarNeg { background:#b91c1c; opacity: 0.75; }
+    .igVal { font-size: 12px; color: var(--m); text-align: right; }
+    @media (max-width: 520px){
+      .igRow { grid-template-columns: 1fr; }
+      .igVal { text-align: right; }
+    }
+
   </style>
 </head>
 <body>
@@ -145,6 +160,8 @@
 
         <div id="igBox" style="display:none; margin-top: 12px;">
           <label>IG（|attribution| 上位）</label>
+          <div class="small">バーは attribution の符号に応じて 0 を中心に左右へ表示します（右=正、左=負）。</div>
+          <div id="igChart" class="igChart" aria-label="IG bar chart"></div>
           <table id="igTopTbl">
             <thead><tr><th>feature</th><th>attribution</th></tr></thead>
             <tbody></tbody>
@@ -213,8 +230,72 @@
       tr.appendChild(td2);
       tb.appendChild(tr);
     }
+    renderIGChart(ig);
     box.style.display = "block";
   }
+
+  
+  function renderIGChart(ig){
+    const chart = $("igChart");
+    if(!chart) return;
+    chart.innerHTML = "";
+
+    if(!ig || !ig.top_abs){
+      return;
+    }
+
+    const rows = ig.top_abs
+      .map(r => ({ name: String(r[0]), val: Number(r[1]) }))
+      .filter(o => Number.isFinite(o.val));
+
+    if(rows.length === 0){
+      return;
+    }
+
+    const maxAbs = Math.max(...rows.map(o => Math.abs(o.val)), 1e-12);
+
+    for(const o of rows){
+      const row = document.createElement("div");
+      row.className = "igRow";
+
+      const feat = document.createElement("div");
+      feat.className = "igFeat";
+      feat.title = o.name;
+      feat.textContent = o.name;
+
+      const wrap = document.createElement("div");
+      wrap.className = "igBarWrap";
+
+      const zero = document.createElement("div");
+      zero.className = "igZero";
+      wrap.appendChild(zero);
+
+      const bar = document.createElement("div");
+      const w = (Math.abs(o.val) / maxAbs) * 50; // 0-50 (% of half width)
+
+      if(o.val >= 0){
+        bar.className = "igBar";
+        bar.style.left = "50%";
+        bar.style.width = w.toFixed(2) + "%";
+      }else{
+        bar.className = "igBar igBarNeg";
+        bar.style.left = (50 - w).toFixed(2) + "%";
+        bar.style.width = w.toFixed(2) + "%";
+      }
+      wrap.appendChild(bar);
+
+      const val = document.createElement("div");
+      val.className = "igVal mono";
+      val.textContent = (Math.abs(o.val) < 1e-3) ? o.val.toExponential(3) : o.val.toFixed(6);
+
+      row.appendChild(feat);
+      row.appendChild(wrap);
+      row.appendChild(val);
+
+      chart.appendChild(row);
+    }
+  }
+
 
   function summarizeMeta(r){
     const dev = r?.meta?.device ? `device=${r.meta.device}` : "";
